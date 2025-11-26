@@ -14,7 +14,7 @@ from flask import Flask
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8476144189:AAEOaWM14lVMkPK-4kyYGELy_x_3uxrXv5c')
 REMINDER_TIME = "09:00"
 
-# GitHub configuration - UPDATE THESE!
+# GitHub configuration
 GITHUB_USERNAME = "nastyalingvo2080-rgb"
 GITHUB_REPO = "Svetlana-Practice-Bot"
 GITHUB_BRANCH = "main"
@@ -63,8 +63,8 @@ def load_translation_pairs_from_github():
     """Load translation pairs from GitHub files"""
     date_str = get_today_date_string()
     
-    english_filename = f"{date_str} English.txt"
-    russian_filename = f"{date_str} Russian.txt"
+    english_filename = f"{date_str} Translation English.txt"
+    russian_filename = f"{date_str} Translation Russian.txt"
     
     english_sentences = load_sentences_from_github(english_filename)
     russian_sentences = load_sentences_from_github(russian_filename)
@@ -82,7 +82,7 @@ def load_content():
     """Load today's content from GitHub"""
     date_str = get_today_date_string()
     
-    listening_filename = f"{date_str} English.txt"
+    listening_filename = f"{date_str} Listening.txt"
     listening_sentences = load_sentences_from_github(listening_filename)
     
     translation_sentences = load_translation_pairs_from_github()
@@ -301,15 +301,26 @@ def send_translation_sentence(chat_id, user_id):
 def handle_voice(message):
     user_id = message.from_user.id
     state = get_user_state(user_id)
+    
     if state.stage == 'translation':
-        item = TRANSLATION_SENTENCES[state.sentence_index]
-        bot.send_message(message.chat.id, f"✅ {item['english']}")
-        time.sleep(0.3)
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        btn_play = types.InlineKeyboardButton("🔊 Play audio", callback_data="play_audio")
-        btn_next = types.InlineKeyboardButton("➡️ Next", callback_data="next_translation")
-        markup.add(btn_play, btn_next)
-        bot.send_message(message.chat.id, "Repeat the sentence aloud", reply_markup=markup)
+        try:
+            item = TRANSLATION_SENTENCES[state.sentence_index]
+            
+            # Create buttons
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            btn_play = types.InlineKeyboardButton("🔊 Play audio", callback_data="play_audio")
+            btn_next = types.InlineKeyboardButton("➡️ Next", callback_data="next_translation")
+            markup.add(btn_play, btn_next)
+            
+            # Send answer and buttons together in ONE message
+            bot.send_message(
+                message.chat.id,
+                f"✅ {item['english']}\n\nRepeat the sentence aloud",
+                reply_markup=markup
+            )
+        except Exception as e:
+            print(f"Error handling voice message: {e}")
+            bot.send_message(message.chat.id, "❌ Sorry, there was an error. Please try again.")
 
 def finish_practice(chat_id, user_id):
     reset_user_state(user_id)
@@ -345,7 +356,7 @@ def schedule_checker():
         time.sleep(60)
 
 if __name__ == '__main__':
-    print("🤖 English Practice Bot is starting...")
+    print("🤖 Svetlana Practice Bot is starting...")
     print(f"📅 Today's date format: {get_today_date_string()}")
     print(f"📚 Loaded {len(LISTENING_SENTENCES)} listening sentences")
     print(f"🌍 Loaded {len(TRANSLATION_SENTENCES)} translation sentences")
